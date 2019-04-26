@@ -20,12 +20,12 @@ namespace DWDumper
     {
         private const string StorageConnectionString = "[provide your storage connection string]";
         private const string EventHubsCaptureAvroBlobUri = "[provide the blob path to a single blob file just to test if it can be parsed and dumped to the DW]";
-        private const string SqlDwConnection = "[provide the SQL DW connection string]";
+        private const string SqlDwConnection = "Server=tcp:stovetemps.database.windows.net,1433;Initial Catalog=stovetemps;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
         private static int Main(string[] args)
         {
             var p = new Program();
-            p.Dump();
+            //p.Dump();
             
             return 0;
         }
@@ -35,7 +35,7 @@ namespace DWDumper
             // Get the blob reference
             var storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
             var blobClient = storageAccount.CreateCloudBlobClient();
-            var blob = blobClient.GetBlobReferenceFromServer(new Uri(EventHubsCaptureAvroBlobUri));
+            //var blob = blobClient.GetBlobReferenceFromServer(new Uri(EventHubsCaptureAvroBlobUri));
 
             using (var dataTable = GetWindTurbineMetricsTable())
             {
@@ -71,7 +71,7 @@ namespace DWDumper
                 using (var bulkCopy = new SqlBulkCopy(sqlDwConnection))
                 {
                     bulkCopy.BulkCopyTimeout = 30;
-                    bulkCopy.DestinationTableName = "dbo.Fact_WindTurbineMetrics";
+                    bulkCopy.DestinationTableName = "dbo.StoveTempsDemo";
                     bulkCopy.WriteToServer(table);
                 }
             }
@@ -80,34 +80,34 @@ namespace DWDumper
         private WindTurbineMeasure DeserializeToWindTurbineMeasure(byte[] body)
         {
             string payload = Encoding.ASCII.GetString(body);
-            return JsonConvert.DeserializeObject<WindTurbineMeasure>(payload);
+            return JsonConvert.DeserializeObject<StoveTemps>(payload);
         }
 
-        private DataTable GetWindTurbineMetricsTable()
-        {
-            var dt = new DataTable();
-            dt.Columns.AddRange
-            (
-                new DataColumn[5]
-                {
+  }
+    private DataTable GetWindTurbineMetricsTable()
+    {
+        var dt = new DataTable();
+        dt.Columns.AddRange
+        (
+            new DataColumn[5]
+            {
+                    new DataColumn("Published", typeof(DateTime)),
                     new DataColumn("DeviceId", typeof(string)),
-                    new DataColumn("MeasureTime", typeof(DateTime)),
-                    new DataColumn("GeneratedPower", typeof(float)),
-                    new DataColumn("WindSpeed", typeof(float)),
-                    new DataColumn("TurbineSpeed", typeof(float))
-                }
-            );
+                    new DataColumn("SupplyTemp", typeof(float)),
+                    new DataColumn("ReturnTemp", typeof(float)),
+                    new DataColumn("ChargeLevel", typeof(float))
+            }
+        );
 
-            return dt;
-        }
+        return dt;
+    }
 
-        private void AddWindTurbineMetricToTable(DataTable table, WindTurbineMeasure wtm)
-        {
-            table.Rows.Add(wtm.DeviceId, wtm.MeasureTime, wtm.GeneratedPower, wtm.WindSpeed, wtm.TurbineSpeed);
-            Console.WriteLine(
-                "DeviceId: {0}, MeasureTime: {1}, GeneratedPower: {2}, WindSpeed: {3}, TurbineSpeed: {4}",
-                wtm.DeviceId, wtm.MeasureTime, wtm.GeneratedPower, wtm.WindSpeed, wtm.TurbineSpeed);
-        }
+    private void AddWindTurbineMetricToTable(DataTable table, StoveTemps wtm)
+    {
+        table.Rows.Add(wtm.Published, wtm.DeviceId, wtm.SupplyTemp, wtm.ReturnTemp, wtm.ChargeLevel);
+        Console.WriteLine(
+            "Published: {0}, DeviceId: {1}, SupplyTemp {2}, ReturnTemp: {3}, ChargeLevel: {4}",
+            wtm.Published, wtm.DeviceId, wtm.SupplyTemp, wtm.ReturnTemp, wtm.ChargeLevel);
     }
 
 }

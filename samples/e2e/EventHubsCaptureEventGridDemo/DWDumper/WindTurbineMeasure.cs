@@ -11,4 +11,13 @@ namespace DWDumper
         public float WindSpeed { get; set; }
         public float TurbineSpeed { get; set; }
     }
+
+    class StoveTemps
+    {
+        public DateTime Published { get; set; }
+        public string DeviceId { get; set; }
+        public float SupplyTemp { get; set; }
+        public float ReturnTemp { get; set; }
+        public float ChargeLevel { get; set; }
+    }
 }

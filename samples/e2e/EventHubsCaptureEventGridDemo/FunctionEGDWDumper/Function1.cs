@@ -31,7 +31,7 @@ namespace FunctionEGDWDumper
         /// <summary>
         /// Use the accompanying .sql script to create this table in the data warehouse
         /// </summary>  
-        private const string TableName = "dbo.Fact_WindTurbineMetrics";
+        private const string TableName = "dbo.StoveTempsDemo";
 
         [FunctionName("EventGridTriggerMigrateData")]
         public static void Run([EventGridTrigger]JObject eventGridEvent, TraceWriter log)
@@ -69,7 +69,7 @@ namespace FunctionEGDWDumper
             var blobClient = storageAccount.CreateCloudBlobClient();
             var blob = blobClient.GetBlobReferenceFromServer(fileUri);
 
-            using (var dataTable = GetWindTurbineMetricsTable())
+            using (var dataTable = GetStoveTempMetrics())
             {
                 // Parse the Avro File
                 using (var avroReader = DataFileReader<GenericRecord>.OpenReader(blob.OpenRead()))
@@ -79,16 +79,17 @@ namespace FunctionEGDWDumper
                         GenericRecord r = avroReader.Next();
 
                         byte[] body = (byte[])r["Body"];
-                        var windTurbineMeasure = DeserializeToWindTurbineMeasure(body);
+                        var stoveTempMeasure = DeserializeToStoveTempMeasure(body);
 
                         // Add the row to in memory table
-                        AddWindTurbineMetricToTable(dataTable, windTurbineMeasure);
+                        AddStoveMetricsToTable(dataTable, stoveTempMeasure);
                     }
                 }
 
                 if (dataTable.Rows.Count > 0)
                 {
                     BatchInsert(dataTable);
+                    
                 }
             }
         }
@@ -115,39 +116,41 @@ namespace FunctionEGDWDumper
         /// <summary>
         /// Deserialize data and return object with expected properties.
         /// </summary> 
-        private static WindTurbineMeasure DeserializeToWindTurbineMeasure(byte[] body)
+        private static StoveTemps DeserializeToStoveTempMeasure(byte[] body)
         {
             string payload = Encoding.ASCII.GetString(body);
-            return JsonConvert.DeserializeObject<WindTurbineMeasure>(payload);
+            return JsonConvert.DeserializeObject<StoveTemps>(payload);
         }
 
         /// <summary>
         /// Define the in-memory table to store the data. The columns match the columns in the .sql script.
         /// </summary>   
-        private static DataTable GetWindTurbineMetricsTable()
+        private static DataTable GetStoveTempMetrics()
         {
             var dt = new DataTable();
             dt.Columns.AddRange
             (
                 new DataColumn[5]
                 {
-                    new DataColumn("DeviceId", typeof(string)),
-                    new DataColumn("MeasureTime", typeof(DateTime)),
-                    new DataColumn("GeneratedPower", typeof(float)),
-                    new DataColumn("WindSpeed", typeof(float)),
-                    new DataColumn("TurbineSpeed", typeof(float))
+                    new DataColumn("Published", typeof(string)),
+                    new DataColumn("EventName", typeof(string)),
+                    new DataColumn("SupplyTemp", typeof(float)),
+                    new DataColumn("ReturnTemp", typeof(float)),
+                    new DataColumn("ChargeLevel", typeof(float))
                 }
             );
 
             return dt;
         }
 
+
         /// <summary>
         /// For each parsed record, add a row to the in-memory table.
         /// </summary>  
-        private static void AddWindTurbineMetricToTable(DataTable table, WindTurbineMeasure wtm)
+        private static void AddStoveMetricsToTable(DataTable table, StoveTemps wtm)
         {
-            table.Rows.Add(wtm.DeviceId, wtm.MeasureTime, wtm.GeneratedPower, wtm.WindSpeed, wtm.TurbineSpeed);      
-        }
+            table.Rows.Add(wtm.timestamp, wtm.eventName, wtm.SupplyTemp, wtm.ReturnTemp, wtm.ChargeLevel);
+        }     
+        
     }
 }

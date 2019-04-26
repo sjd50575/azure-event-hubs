@@ -3,12 +3,13 @@ using System;
 namespace FunctionEGDWDumper
 {
     // TODO, move this class to a Contracts assembly that is shared across different projects
-    class WindTurbineMeasure
+
+    class StoveTemps
     {
-        public string DeviceId { get; set; }
-        public DateTime MeasureTime { get; set; }
-        public float GeneratedPower { get; set; }
-        public float WindSpeed { get; set; }
-        public float TurbineSpeed { get; set; }
+        public string timestamp { get; set; }
+        public string eventName { get; set; }
+        public float SupplyTemp { get; set; }
+        public float ReturnTemp { get; set; }
+        public float ChargeLevel { get; set; }
     }
 }
